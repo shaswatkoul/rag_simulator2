@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: auto;
+      padding: 32px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 42px;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #38bdf8, #a78bfa);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #f8fafc;
+      font-size: 22px;
+    }
+
+    textarea, input {
+      width: 100%;
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      outline: none;
+      resize: vertical;
+    }
+
+    textarea {
+      min-height: 160px;
+    }
+
+    input {
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      margin-top: 12px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(59, 130, 246, 0.35);
+    }
+
+    .steps {
+      margin-top: 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .step {
+      border-left: 4px solid #38bdf8;
+      padding: 18px;
+      background: #111827;
+      border-radius: 14px;
+    }
+
+    .step h3 {
+      margin: 0 0 8px;
+      color: #93c5fd;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 5px 10px;
+      margin: 4px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #bfdbfe;
+      font-size: 13px;
+    }
+
+    .chunk {
+      background: #020617;
+      border: 1px solid #334155;
+      padding: 14px;
+      border-radius: 12px;
+      margin: 10px 0;
+    }
+
+    .score {
+      color: #22c55e;
+      font-weight: 700;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      color: #d1d5db;
+      overflow-x: auto;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .flow span {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #c4b5fd;
+      font-size: 14px;
+    }
+
+    .note {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>RAG Simulator</h1>
+      <p>Understand Retrieval-Augmented Generation step by step</p>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1. Knowledge Base</h2>
+        <p class="note">
+          Paste source content here. Imagine this came from PDFs, websites, APIs, docs, or databases.
+        </p>
+        <textarea id="knowledge">RAG stands for Retrieval-Augmented Generation. It combines search with LLM generation.
+
+Documents are first collected from sources like PDFs, websites, APIs, and internal documents.
+
+The documents are split into smaller chunks so that relevant parts can be retrieved later.
+
+Each chunk is converted into a vector embedding, which is a numerical representation of meaning.
+
+The embeddings are stored in a vector database.
+
+When a user asks a question, the question is also converted into an embedding.
+
+The system searches the vector database to find the most relevant chunks.
+
+The top-k retrieved chunks are added to the prompt as context.
+
+The LLM uses the user question and retrieved context to generate a grounded answer.
+
+Advanced RAG systems may use hybrid search, metadata filters, reranking, citations, and prompt optimization.</textarea>
+        <button onclick="buildKnowledgeBase()">Build Knowledge Base</button>
+      </div>
+
+      <div class="card">
+        <h2>2. User Prompt</h2>
+        <p class="note">
+          Ask a question. The simulator will embed it, search chunks, retrieve Top-K results, and generate a fake answer.
+        </p>
+        <input id="query" value="How does RAG retrieve relevant information?" />
+        <button onclick="runRAG()">Run RAG Pipeline</button>
+
+        <div class="flow">
+          <span>Prompt</span>
+          <span>Embedding</span>
+          <span>Vector Search</span>
+          <span>Top-K</span>
+          <span>Context</span>
+          <span>LLM Answer</span>
+        </div>
+      </div>
+
+      <div class="card full">
+        <h2>RAG Pipeline Output</h2>
+        <div id="output" class="steps">
+          <p class="note">Build the knowledge base first, then run the RAG pipeline.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let vectorDB = [];
+
+    function tokenize(text) {
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter(Boolean);
+    }
+
+    function chunkText(text, maxWords = 28) {
+      const words = text.split(/\s+/);
+      const chunks = [];
+
+      for (let i = 0; i < words.length; i += maxWords) {
+        chunks.push(words.slice(i, i + maxWords).join(" "));
+      }
+
+      return chunks;
+    }
+
+    function fakeEmbedding(text) {
+      const words = tokenize(text);
+      const vector = {};
+
+      words.forEach(word => {
+        vector[word] = (vector[word] || 0) + 1;
+      });
+
+      return vector;
+    }
+
+    function cosineSimilarity(vecA, vecB) {
+      const allWords = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+
+      let dot = 0;
+      let magA = 0;
+      let magB = 0;
+
+      allWords.forEach(word => {
+        const a = vecA[word] || 0;
+        const b = vecB[word] || 0;
+
+        dot += a * b;
+        magA += a * a;
+        magB += b * b;
+      });
+
+      if (magA === 0 || magB === 0) return 0;
+
+      return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+    }
+
+    function buildKnowledgeBase() {
+      const knowledge = document.getElementById("knowledge").value;
+      const chunks = chunkText(knowledge);
+
+      vectorDB = chunks.map((chunk, index) => ({
+        id: index + 1,
+        text: chunk,
+        embedding: fakeEmbedding(chunk)
+      }));
+
+      const output = document.getElementById("output");
+
+      output.innerHTML = `
+        <div class="step">
+          <h3>Step 1: Data Ingestion</h3>
+          <p>Source data was loaded into the simulator.</p>
+          <span class="tag">PDF</span>
+          <span class="tag">Website</span>
+          <span class="tag">API</span>
+          <span class="tag">Docs</span>
+        </div>
+
+        <div class="step">
+          <h3>Step 2: Chunking</h3>
+          <p>The source text was split into smaller chunks.</p>
+          ${vectorDB.map(item => `
+            <div class="chunk">
+              <strong>Chunk ${item.id}</strong><br>
+              ${item.text}
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="step">
+          <h3>Step 3: Embeddings</h3>
+          <p>Each chunk was converted into a simplified fake embedding.</p>
+          <p class="note">
+            Real RAG uses high-dimensional numerical vectors from embedding models.
+            This simulator uses word-frequency vectors so you can understand the idea visually.
+          </p>
+        </div>
+
+        <div class="step">
+          <h3>Step 4: Vector DB Storage</h3>
+          <p>${vectorDB.length} chunks were stored in the simulated vector database.</p>
+        </div>
+      `;
+    }
+
+    function runRAG() {
+      if (vectorDB.length === 0) {
+        buildKnowledgeBase();
+      }
+
+      const query = document.getElementById("query").value;
+      const queryEmbedding = fakeEmbedding(query);
+
+      const results = vectorDB
+        .map(item => ({
+          ...item,
+          score: cosineSimilarity(queryEmbedding, item.embedding)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      const context = results.map(r => `Chunk ${r.id}: ${r.text}`).join("\n\n");
+
+      const finalPrompt = `
+SYSTEM:
+You are a helpful assistant. Answer using only the retrieved context.
+
+RETRIEVED CONTEXT:
+${context}
+
+USER QUESTION:
+${query}
+      `.trim();
+
+      const fakeAnswer = generateFakeAnswer(query, results);
+
+      const output = document.getElementById("output");
+
+      output.innerHTML += `
+        <div class="step">
+          <h3>Step 5: User Query Embedding</h3>
+          <p>The user prompt was converted into a fake embedding.</p>
+          <pre>${JSON.stringify(queryEmbedding, null, 2)}</pre>
+        </div>
+
+        <div class="step">
+          <h3>Step 6: Vector Search</h3>
+          <p>The query embedding was compared against all chunk embeddings using cosine similarity.</p>
+        </div>
+
+        <div class="step">
+          <h3>Step 7: Top-K Retrieved Chunks</h3>
+          <p>The top 3 most relevant chunks were retrieved.</p>
+          ${results.map(r => `
+            <div class="chunk">
+              <strong>Chunk ${r.id}</strong>
+              <span class="score">Score: ${r.score.toFixed(3)}</span>
+              <br><br>
+              ${r.text}
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="step">
+          <h3>Step 8: Prompt Assembly</h3>
+          <p>The retrieved chunks are added as context along with the user question.</p>
+          <pre>${finalPrompt}</pre>
+        </div>
+
+        <div class="step">
+          <h3>Step 9: LLM Generation</h3>
+          <p>The LLM generates an answer grounded in the retrieved context.</p>
+          <pre>${fakeAnswer}</pre>
+        </div>
+      `;
+    }
+
+    function generateFakeAnswer(query, results) {
+      const usefulText = results.map(r => r.text).join(" ");
+
+      return `
+Based on the retrieved chunks, RAG works by first preparing a knowledge base from external sources, splitting that knowledge into chunks, converting those chunks into embeddings, and storing them in a vector database.
+
+When the user asks: "${query}", the question is also converted into an embedding. The system compares that query embedding with stored chunk embeddings, retrieves the most relevant chunks, adds them as context, and gives the combined prompt to the LLM.
+
+The LLM then generates an answer using the retrieved context instead of relying only on its internal training data.
+      `.trim();
+    }
+
+    buildKnowledgeBase();
+  </script>
+</body>
+</html>
